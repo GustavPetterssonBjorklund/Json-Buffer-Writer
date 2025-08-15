@@ -1,0 +1,73 @@
+name: Publish to PlatformIO Registry
+
+on:
+  push:
+    tags:
+      - "v*" # e.g. v1.0.0
+
+jobs:
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install PlatformIO Core
+        run: pip install -U platformio
+
+      - name: Ensure token is present
+        env:
+          PLATFORMIO_AUTH_TOKEN: ${{ secrets.PIO_TOKEN }}
+        run: |
+          if [ -z "$PLATFORMIO_AUTH_TOKEN" ]; then
+            echo "::error ::Missing required secret PIO_TOKEN (used as PLATFORMIO_AUTH_TOKEN)"
+            exit 1
+          fi
+
+      # Optional but nice: ensure only the intended files get packaged
+      - name: Verify export allowlist
+        run: |
+          python - << 'PY'
+          import json, sys
+          m = json.load(open('library.json', 'r', encoding='utf-8'))
+          ok = 'export' in m and 'include' in m['export'] and 'src' in m['export']
+          if not ok:
+              print("TIP: Add an 'export.include' in library.json to whitelist files (include/, src/, README.md, LICENSE, library.json).", file=sys.stderr)
+          PY
+
+      - name: Check tag matches library.json version
+        id: check_version
+        run: |
+          TAG="${GITHUB_REF_NAME}"              # e.g. v1.0.3
+          VERSION_JSON=$(python - << 'PY'
+          import json
+          print(json.load(open('library.json', 'r', encoding='utf-8'))['version'])
+          PY
+          )
+          TAG_VERSION="${TAG#v}"
+          echo "Tag: ${TAG}"
+          echo "library.json version: ${VERSION_JSON}"
+          if [ "${TAG_VERSION}" != "${VERSION_JSON}" ]; then
+            echo "::error ::Tag version (${TAG_VERSION}) does not match library.json version (${VERSION_JSON})."
+            exit 1
+          fi
+          echo "version=${TAG_VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Pack (dry-run artifact)
+        run: pio pkg pack
+
+      - name: Publish to PlatformIO Registry
+        env:
+          PLATFORMIO_AUTH_TOKEN: ${{ secrets.PIO_TOKEN }}
+        # Add: --owner your-org   if publishing under an organization
+        run: pio pkg publish --non-interactive

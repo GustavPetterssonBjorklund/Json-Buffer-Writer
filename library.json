@@ -1,0 +1,35 @@
+{
+  "name": "Json Buffer Writer",
+  "version": "1.0.0",
+  "description": "Minimal streaming JSON writer for embedded systems. No heap allocation, proper escaping, and support for nested objects/arrays.",
+  "keywords": [
+    "json",
+    "buffer",
+    "writer",
+    "embedded",
+    "arduino"
+  ],
+  "authors": [
+    {
+      "name": "Gustav Pettersson",
+      "email": "gustav.pettersson2@outlook.com",
+      "url": "https://github.com/GustavPetterssonBjorklund",
+      "maintainer": true
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GustavPetterssonBjorklund/Json-Buffer-Writer.git"
+  },
+  "homepage": "https://github.com/GustavPetterssonBjorklund/Json-Buffer-Writer",
+  "license": "MIT",
+  "frameworks": "*",
+  "platforms": "*",
+  "headers": "json_buffer_writer.hpp",
+  "build": {
+    "srcFilter": [
+      "+<*.cpp>",
+      "+<*.c>"
+    ]
+  }
+}
